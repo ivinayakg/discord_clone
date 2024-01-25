@@ -1,9 +1,35 @@
-import type { User } from "@prisma/client";
+import type { Server, User } from "@prisma/client";
 import bcrypt from "bcryptjs";
 
 import { prisma } from "~/db.server";
 
 export type { User } from "@prisma/client";
+
+export async function isUserMember(id: User["id"], serverId: Server["id"]) {
+  let userData = await prisma.user.findUnique({
+    where: { id },
+    include: { servers: { select: { id: true } } },
+  });
+
+  if (!userData) {
+    return false;
+  }
+
+  for (let server of userData?.servers) {
+    if (server.id === serverId) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+export async function JoinServer(userId: User["id"], serverId: Server["id"]) {
+  return await prisma.user.update({
+    where: { id: userId },
+    data: { servers: { connect: { id: serverId } } },
+  });
+}
 
 export async function getUserById(id: User["id"]) {
   return prisma.user.findUnique({ where: { id } });

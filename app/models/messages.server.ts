@@ -10,6 +10,7 @@ export async function getChannelMessages(channelId: string) {
 
 export async function createMessage(
   channelId: string,
+  serverId: string,
   content: string,
   userId: string,
 ) {
@@ -18,6 +19,8 @@ export async function createMessage(
       channel: { connect: { id: channelId } },
       content,
       author: { connect: { id: userId } },
+      server: { connect: { id: serverId } },
     },
+    include: { author: { select: { id: true, email: true } } },
   });
 }

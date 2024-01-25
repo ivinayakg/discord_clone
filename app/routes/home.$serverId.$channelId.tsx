@@ -1,6 +1,5 @@
-import { Message } from "@prisma/client";
 import { LoaderFunctionArgs, json } from "@remix-run/node";
-import { Form, useLoaderData } from "@remix-run/react";
+import { useLoaderData } from "@remix-run/react";
 import { useEffect, useState } from "react";
 import { Avatar, AvatarFallback } from "~/components/ui/avatar";
 import { Button } from "~/components/ui/button";
@@ -8,6 +7,7 @@ import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import { Separator } from "~/components/ui/separator";
 import { MessageResponse } from "~/types/dtos";
+import { useEventSource } from "remix-utils/sse/react";
 
 export async function loader(args: LoaderFunctionArgs) {
   const serverId = args.params.serverId;
@@ -21,8 +21,19 @@ export async function loader(args: LoaderFunctionArgs) {
 }
 
 export default function ChannelRoute() {
-  const [messages, setMessages] = useState([]);
+  const [messages, setMessages] = useState<MessageResponse[]>([]);
   const { channelId, serverId } = useLoaderData<typeof loader>();
+  const currentComments = useEventSource(
+    `/api/messages/subscribe?channelId=${channelId}&serverId=${serverId}`,
+    {
+      event: "message",
+    },
+  );
+
+  useEffect(() => {
+    const parsedComment = JSON.parse(currentComments as string);
+    setMessages((prevMessages) => [...prevMessages, parsedComment]);
+  }, [currentComments]);
 
   useEffect(() => {
     (async () => {
@@ -39,9 +50,10 @@ export default function ChannelRoute() {
   return (
     <div className="flex flex-col items-center justify-end min-h-lvh w-full p-3">
       <ul className="min-h-full h-10/12 w-full">
-        {messages.map((message: MessageResponse) => (
-          <MessageCard message={message} key={message.id} />
-        ))}
+        {messages.map(
+          (message: MessageResponse) =>
+            message && <MessageCard message={message} key={message.id} />,
+        )}
       </ul>
       <SendMessage serverId={serverId} channelId={channelId} />
     </div>
@@ -100,6 +112,12 @@ function SendMessage({
     } catch (error) {
       console.log(error);
     }
+
+    // reset form
+    let inputBox = document.getElementById("input_box_custom");
+    if (inputBox) {
+      (inputBox as HTMLInputElement).value = "";
+    }
   };
 
   return (
@@ -114,9 +132,16 @@ function SendMessage({
               <em className="text-red-600">{actionData?.errors.channelName}</em>
             ) : null
           ) : null} */}
-        <Input type="text" name="message" placeholder="Message" />
+        <Input
+          type="text"
+          id="input_box_custom"
+          name="message"
+          placeholder="Message"
+        />
       </Label>
-      <Button type="submit" className="h-full">Send</Button>
+      <Button type="submit" className="h-full">
+        Send
+      </Button>
     </form>
   );
 }

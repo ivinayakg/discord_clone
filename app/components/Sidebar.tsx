@@ -3,6 +3,7 @@ import { ScrollArea } from "./ui/scroll-area";
 import { Server } from "@prisma/client";
 import { Separator } from "./ui/separator";
 import { Link } from "@remix-run/react";
+import { Button } from "./ui/button";
 
 export default function Sidebar({
   className,
@@ -13,11 +14,30 @@ export default function Sidebar({
   servers: any[];
   children: any;
 }) {
+  const logoutHandler = async () => {
+    const res = await fetch(`/logout`, {
+      method: "POST",
+    });
+    if (res.status === 200) {
+      window.location.href = "/";
+    }
+  };
+
   return (
     <div className={className}>
       <ScrollArea className={"h-full w-full rounded-l-md border "}>
         <div className="p-4 flex flex-col justify-center items-center gap-3">
           {children}
+          <Button
+            className="flex justify-center items-center text-xl"
+            onClick={logoutHandler}
+            variant={"ghost"}
+          >
+            <Avatar className="h-14 w-14">
+              {/* <AvatarImage src="https://github.com/shadcn.png" alt="@shadcn" /> */}
+              <AvatarFallback>{"->"}</AvatarFallback>
+            </Avatar>
+          </Button>
           <Link
             className="flex justify-center items-center text-xl"
             to={`/home/createserver`}

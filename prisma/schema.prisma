@@ -27,6 +27,7 @@ model Server {
   ownerId     String
   channels    Channel[]
   permissions Permission[]
+  Message     Message[]
 }
 
 model Channel {
@@ -46,6 +47,8 @@ model Message {
   authorId  String
   channel   Channel  @relation(fields: [channelId], references: [id])
   channelId String
+  server    Server   @relation(fields: [serverId], references: [id])
+  serverId  String
 }
 
 enum Role {

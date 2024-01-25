@@ -1,6 +1,8 @@
 import { ActionFunctionArgs, LoaderFunctionArgs, json } from "@remix-run/node";
 import { useSearchParams } from "@remix-run/react";
 import { createMessage, getChannelMessages } from "~/models/messages.server";
+import { emitter } from "~/service/emitter.server";
+import redisServer from "~/service/redis.server";
 import { requireUser } from "~/session.server";
 
 export async function loader(args: LoaderFunctionArgs) {
@@ -15,6 +17,8 @@ export async function loader(args: LoaderFunctionArgs) {
   if (channelId === null || serverId === null) {
     return new Response("Bad Request", { status: 400 });
   }
+
+  // redisServer.set
 
   const messages = await getChannelMessages(channelId);
   return json({
@@ -39,7 +43,8 @@ export async function action(args: ActionFunctionArgs) {
     return new Response("Bad Request", { status: 400 });
   }
 
-  await createMessage(channelId, body.message, user.id);
+  const message = await createMessage(channelId, serverId, body.message, user.id);
+  emitter.emit("message", `${JSON.stringify(message)}`);
   return json(
     {
       message: "success",
